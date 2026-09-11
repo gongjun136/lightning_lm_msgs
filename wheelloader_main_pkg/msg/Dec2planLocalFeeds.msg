@@ -1,0 +1,16 @@
+std_msgs/Header header
+bool avoid_lower_switch
+int32 local_failure_count
+float64 x_front
+float64 y_front
+float64 x_rear
+float64 y_rear
+float64 v_real
+float64 a_real
+float64 a_max_param
+float64 da_max_param
+float64 w_max_param
+float64 v_max_param
+float64 va_max_param
+float64 vd_max_param
+float64 vw_max_param

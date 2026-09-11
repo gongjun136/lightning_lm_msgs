@@ -1,0 +1,11 @@
+std_msgs/Header header
+float64 x_front
+float64 y_front
+float64 phi_front_deg
+float64 x_rear
+float64 y_rear
+float64 phi_rear_deg
+float64 delta_deg
+float64 v
+float64 w_deg
+float64 a

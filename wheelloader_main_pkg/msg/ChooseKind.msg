@@ -1,0 +1,2 @@
+int32[10] choosekind
+int32[10] choosebarn

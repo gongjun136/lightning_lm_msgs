@@ -1,0 +1,5 @@
+bool autoparking 
+---
+bool success
+string errorinfo
+

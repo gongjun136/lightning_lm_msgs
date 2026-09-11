@@ -1,0 +1,9 @@
+std_msgs/Header header
+uint64 task_id
+float32 truckx
+float32 trucky
+float32 truckangle
+float32 theta1
+float32 theta2
+float32 speed
+float32 processbat

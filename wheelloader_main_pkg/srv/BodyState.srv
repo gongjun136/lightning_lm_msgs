@@ -1,0 +1,10 @@
+char drive_yboom
+char driveamp_yboom
+char drive_xboom
+char driveamp_xboom
+char switch_speaker_board
+char stop_tele_soft
+char lamp
+char glass
+---
+bool receivedbodystate

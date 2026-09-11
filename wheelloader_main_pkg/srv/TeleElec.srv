@@ -1,0 +1,4 @@
+bool startengine
+---
+bool success
+string errorinfo

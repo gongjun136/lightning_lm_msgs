@@ -1,0 +1,5 @@
+int32[5] kind  
+int32[5] kindsurplus  
+---
+bool success
+string errorinfo

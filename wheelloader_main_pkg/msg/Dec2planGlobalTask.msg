@@ -1,0 +1,12 @@
+std_msgs/Header header
+bool start_flag
+float32 traj_cmd
+float32 x_gen_from
+float32 y_gen_from
+float32 phi_gen_from
+float32 delta_gen_from
+float32 x_gen_to
+float32 y_gen_to
+float32 phi_gen_to
+float32 delta_gen_to
+float32 rot_mode

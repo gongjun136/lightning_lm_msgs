@@ -1,0 +1,10 @@
+std_msgs/Header header
+bool switch_loudspeaker
+bool switch_gear
+bool switch_qiaoban_f
+bool switch_qiaoban_r
+bool park
+uint16 taban
+uint16 brake
+uint16 left
+uint16 right

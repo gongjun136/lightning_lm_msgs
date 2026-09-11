@@ -1,0 +1,7 @@
+std_msgs/Header header
+bool start_flag
+float32 x_gen_from
+float32 y_gen_from
+float32 phi_gen_from
+float32 delta_gen_from
+int8 current_index

@@ -1,0 +1,11 @@
+std_msgs/Header header
+float64 mpc_switch
+float64 boom_switch
+float64 bkt_switch
+float64 boom_ang_ref
+float64 bkt_cyl_ref
+float64 js_bkt_ctrl_ol
+float64 bkt_case_ol
+float64 bkt_cyl_dump_len
+float64 boom_upper_lim
+float64 kp_modifier

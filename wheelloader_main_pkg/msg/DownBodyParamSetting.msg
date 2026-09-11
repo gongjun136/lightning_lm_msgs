@@ -1,0 +1,21 @@
+std_msgs/Header header
+geometry_msgs/Point target_position_0
+geometry_msgs/Point target_position_1
+geometry_msgs/Point q_path_vel_0
+geometry_msgs/Point q_path_vel_1
+geometry_msgs/Point r_path_vel
+geometry_msgs/Point q_path_eta_f
+geometry_msgs/Point q_path_vel_0_0
+geometry_msgs/Point q_path_vel_1_1
+geometry_msgs/Point r_path_vel_0
+geometry_msgs/Point q_path_eta_b
+geometry_msgs/Point kp_path_a
+geometry_msgs/Point ki_path_a
+geometry_msgs/Point kd_path_a
+geometry_msgs/Point q_hyd_steer
+geometry_msgs/Point q_vel
+geometry_msgs/Point r_hyd_steer
+geometry_msgs/Point r_vel
+geometry_msgs/Point kp_ki_kd_value
+geometry_msgs/Point path_select
+

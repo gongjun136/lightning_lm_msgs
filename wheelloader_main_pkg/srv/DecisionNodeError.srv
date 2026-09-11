@@ -1,0 +1,4 @@
+int32 decisionnodeerror
+---
+bool success
+string errorinfo

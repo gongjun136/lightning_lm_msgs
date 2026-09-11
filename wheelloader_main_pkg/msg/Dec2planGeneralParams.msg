@@ -1,0 +1,10 @@
+std_msgs/Header header
+float32 v_max
+float32 a_max
+float32 da_max
+float32 va_max
+float32 w_max
+float32 flag_lift
+float32 center_avo
+float32 len_avo
+float32 tth_avo_max

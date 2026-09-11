@@ -1,0 +1,12 @@
+std_msgs/Header header
+builtin_interfaces/Time time
+uint16 downswingvalue
+uint16 accampvalue
+uint16 barkampvalue
+uint16 yboomstatevalue
+uint16 yboomampvalue
+uint16 xboomstatevalue
+uint16 xboomampvalue
+uint16 downnrdlvalue
+float64 motorrotnum
+float64 motortorsion

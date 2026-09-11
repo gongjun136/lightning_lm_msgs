@@ -1,0 +1,10 @@
+char accamp_l
+char accamp_h
+char brakeamp_l
+char brakeamp_h
+char leftturnamp_l
+char leftturnamp_h
+char rightturnamp_l
+char rightturnamp_h
+---
+bool receivedmsgoperation
