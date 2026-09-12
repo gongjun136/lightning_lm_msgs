@@ -12,13 +12,6 @@ pipeline {
     }
 
     stages {
-        stage('拉取代码') {
-            steps {
-                checkout scm
-                echo "代码commit版本：${IMAGE_TAG}"
-            }
-        }
-
         stage('容器内编译ROS2 message包') {
             steps {
                 sh '''
@@ -33,7 +26,8 @@ pipeline {
                       ${BASE_IMAGE} \
                       bash -c "
                         set -e
-                        # 在容器内部清理，容器root用户，无权限问题
+                        # 加载ROS2 humble环境（关键修复）
+                        source /opt/ros/humble/setup.bash
                         rm -rf build install
                         colcon build
                         echo '==== msg包编译完成 ===='
