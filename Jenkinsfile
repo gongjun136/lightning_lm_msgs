@@ -19,15 +19,6 @@ pipeline {
             }
         }
 
-        stage('清理旧编译产物') {
-            steps {
-                sh '''
-                    rm -rf build install
-                    echo "build/install目录清理完成"
-                '''
-            }
-        }
-
         stage('容器内编译ROS2 message包') {
             steps {
                 sh '''
@@ -42,7 +33,8 @@ pipeline {
                       ${BASE_IMAGE} \
                       bash -c "
                         set -e
-                        # 直接编译当前workspace全部消息包
+                        # 在容器内部清理，容器root用户，无权限问题
+                        rm -rf build install
                         colcon build
                         echo '==== msg包编译完成 ===='
                       "
