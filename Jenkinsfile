@@ -43,13 +43,13 @@ pipeline {
                       bash -c "
                         set -e
                         # 加载环境
-                        source ./settings.sh
+                        # source ./settings.sh
                         # 仅编译common/message消息包
                         colcon build --packages-select common/message
                         echo '==== msg包编译完成，开始执行rename_msgs.sh ===='
                         # ✅ 编译完成执行消息重命名脚本
-                        chmod +x rename_msgs.sh
-                        ./rename_msgs.sh
+                        # chmod +x rename_msgs.sh
+                        #./rename_msgs.sh
                       "
                 '''
                 echo "消息包编译 + rename_msgs.sh执行完成"
