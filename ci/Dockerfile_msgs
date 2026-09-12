@@ -1,0 +1,18 @@
+FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest
+
+WORKDIR /home/sany/work
+
+# 拷贝环境脚本 + 消息处理脚本
+COPY settings.sh .
+COPY rename_msgs.sh .
+# 拷贝colcon编译输出install目录（消息库产物）
+COPY install ./install
+
+# 给脚本执行权限
+RUN chmod +x settings.sh rename_msgs.sh
+
+# 创建日志目录（保持和整体项目目录规范统一）
+RUN mkdir -p /var/log/ros2/{bridge,control,diagnostics,localization,perception,VLM,VLA,planning,decision}
+
+# 默认加载ros2环境，可直接source
+CMD ["/bin/bash"]
