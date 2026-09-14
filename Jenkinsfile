@@ -33,9 +33,9 @@ mv /home/sany/work/install /home/sany/work/Package/install
 ls -la /home/sany/work/Package
 
 # 执行rename_msgs.sh脚本
-chmod +x /home/sany/work/rename_msgs.sh
+
 echo '==== 开始执行 rename_msgs.sh ===='
-/home/sany/work/rename_msgs.sh
+rename_msgs.sh
 echo '==== rename_msgs.sh 执行完成 ===='
 "
 '''
