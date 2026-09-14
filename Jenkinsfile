@@ -14,11 +14,14 @@ pipeline {
                 sh '''
 #!/bin/sh
 set -e
-# 获取MR diff，截断防止上下文溢出，最多80k字符
+if [ -z "${gitlabTargetBranch}" ];then
+    echo "ERROR: 非MR触发，gitlabTargetBranch变量为空，跳过AI评审"
+    exit 1
+fi
+
 git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
 MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
 
-# System提示词：ROS2 C++工业代码评审，强制只输出JSON，无多余文字
 SYSTEM_PROMPT=$(cat <<'EOF'
 你是资深ROS2 C++工业代码评审专家。
 分析下面git MR代码diff，输出严格JSON，禁止任何前言、解释、markdown。
@@ -34,14 +37,11 @@ EOF
 )
 
 USER_CONTENT=$(cat <<EOF
-下面是本次MR代码diff：
-\`\`\`diff
+下面是本次MR代码diff内容：
 ${MR_DIFF}
-\`\`\`
 EOF
 )
 
-# 调用 Anthropic 原生接口 /v1/messages
 RESP=$(curl -s --connect-timeout 10 "${ANTHROPIC_BASE_URL}/v1/messages" \
 -H "Content-Type: application/json" \
 -H "x-api-key: ${ANTHROPIC_API_KEY}" \
@@ -60,11 +60,9 @@ echo "${RESP}" > ai_code_review.json
 '''
                 script {
                     def aiRaw = readJSON file: 'ai_code_review.json'
-                    // Anthropic返回结构：content[0].text 才是大模型输出文本
                     String llmOutput = aiRaw.content[0].text.trim()
                     echo "🤖 LLM原始输出文本：${llmOutput}"
 
-                    // 解析模型输出的json字符串
                     def aiResult = new groovy.json.JsonSlurper().parseText(llmOutput)
                     int score = aiResult.score
                     def risk = aiResult.risk_level
