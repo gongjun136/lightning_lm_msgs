@@ -4,7 +4,7 @@ pipeline {
         // 取git短commit hash
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         SONAR_TOKEN = credentials('jenkins-sonar')
-    }   
+    }
     stages {
         stage('容器内编译ROS2 message包') {
             steps {
@@ -44,25 +44,25 @@ pipeline {
             }
         }
 
-        // ========== 新增 SonarQube 代码扫描阶段 ==========
+        // ========== SonarQube 代码扫描 ==========
         stage('SonarQube 代码扫描') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh """
+                    sh '''
                     sonar-scanner \
                         -Dsonar.projectKey=my-project \
                         -Dsonar.projectName=ROS2-Msg-Package \
                         -Dsonar.projectVersion=${GIT_COMMIT_SHORT} \
                         -Dsonar.sources=. \
-                        -Dsonar.exclusions=build/**,install/**,Package/**,**/*.md \
-                        -Dsonar.host.url=http://127.0.0.1:9000 \
-                        -Dsonar.login=${SONAR_TOKEN}
-                    """
+                        -Dsonar.exclusions=build/**,install/**,Package/**,**/*.md,**/*.swp \
+                        -Dsonar.host.url=http://10.233.88.16:9000 \
+                        -Dsonar.token=${SONAR_TOKEN}
+                    '''
                 }
             }
         }
 
-        // ========== 新增：Sonar质量门禁校验（可选，建议开启，不达标阻断流水线） ==========
+        // ========== Sonar质量门禁校验 ==========
         stage('Sonar 质量门禁校验') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
@@ -81,7 +81,10 @@ pipeline {
     }
     post {
         always {
-            sh 'docker rm -f msg_build_7 || true'
+            // 加node{} 修复FilePath上下文缺失报错
+            node {
+                sh 'docker rm -f msg_build_7 || true'
+            }
         }
         success {
             echo "✅ 流水线全部执行成功！产物目录：${WORKSPACE}/Package/install"
