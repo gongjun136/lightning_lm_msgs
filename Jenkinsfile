@@ -75,16 +75,14 @@ pipeline {
             steps {
                 sh """
                 docker image prune -f
-            """
+                """
             }
         }
     }
     post {
         always {
-            // 加node{} 修复FilePath上下文缺失报错
-            node {
-                sh 'docker rm -f msg_build_7 || true'
-            }
+            // 直接执行sh，不要嵌套node{}
+            sh 'docker rm -f msg_build_7 || true'
         }
         success {
             echo "✅ 流水线全部执行成功！产物目录：${WORKSPACE}/Package/install"
