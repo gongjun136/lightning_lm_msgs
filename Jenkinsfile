@@ -10,15 +10,14 @@ pipeline {
     }
     stages {
         stage('AI Code Review - MR Diff') {
+            when {
+                // 只有存在gitlabTargetBranch变量(MR触发)才执行本stage
+                environment name: 'gitlabTargetBranch', value: ''
+            }
             steps {
                 sh '''
 #!/bin/sh
 set -e
-if [ -z "${gitlabTargetBranch}" ];then
-    echo "ERROR: 非MR触发，gitlabTargetBranch变量为空，跳过AI评审"
-    exit 1
-fi
-
 git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
 MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
 
