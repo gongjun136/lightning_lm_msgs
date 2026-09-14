@@ -3,8 +3,92 @@ pipeline {
     environment {
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         SONAR_TOKEN = credentials('jenkins-sonar')
+        // ========= 本地Claude网关配置（这里按你的配置改好） =========
+        ANTHROPIC_BASE_URL = "http://146.56.245.198:4000"
+        ANTHROPIC_MODEL = "MiniMax-M2.7"
+        SCORE_THRESHOLD = 70 // 低于该分数阻断流水线
+        # 如果网关需要api-key，在这里填，不需要就随便填占位字符串
+        ANTHROPIC_API_KEY = "dummy-key"
     }
     stages {
+        stage('AI Code Review - MR Diff') {
+            steps {
+                sh '''
+                #!/bin/sh
+                set -e
+                # 获取MR diff，截断防止上下文溢出，最多80k字符
+                git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
+                MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
+
+                # System提示词：ROS2 C++工业代码评审，强制只输出JSON，无多余文字
+                SYSTEM_PROMPT=$(cat <<'EOF'
+                你是资深ROS2 C++工业代码评审专家。
+                分析下面git MR代码diff，输出严格JSON，**禁止任何前言、解释、markdown**。
+                JSON结构固定：
+                {
+                "score": 0~100整数,
+                "risk_level": "高/中/低",
+                "problems": ["问题1","问题2"],
+                "suggestions": ["建议1"]
+                }
+                评分重点检查：内存泄漏、裸指针、多线程竞态、ROS回调阻塞、资源未释放、魔法数字、硬编码、异常处理。
+                EOF
+                )
+
+                USER_CONTENT=$(cat <<EOF
+                下面是本次MR代码diff：
+                \`\`\`diff
+                ${MR_DIFF}
+                \`\`\`
+                EOF
+                )
+
+                # 调用 Anthropic 原生接口 /v1/messages
+                RESP=$(curl -s --connect-timeout 10 "${ANTHROPIC_BASE_URL}/v1/messages" \
+                -H "Content-Type: application/json" \
+                -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+                -d '{
+                "model": "'"${ANTHROPIC_MODEL}"'",
+                "max_tokens": 1200,
+                "system": "'"${SYSTEM_PROMPT}"'",
+                "messages": [
+                {"role":"user","content":"'"${USER_CONTENT}"'"}
+                ]
+                }')
+
+                echo "==== Gateway Raw Response ===="
+                echo "${RESP}"
+                echo "${RESP}" > ai_code_review.json
+                EOF
+                '''
+                script {
+                    def aiRaw = readJSON file: 'ai_code_review.json'
+                    // Anthropic返回结构：content[0].text 才是大模型输出文本
+                    String llmOutput = aiRaw.content[0].text.trim()
+                    echo "🤖 LLM原始输出文本：${llmOutput}"
+
+                    // 解析模型输出的json字符串
+                    def aiResult = new groovy.json.JsonSlurper().parseText(llmOutput)
+                    int score = aiResult.score
+                    def risk = aiResult.risk_level
+                    def problems = aiResult.problems
+                    def suggestions = aiResult.suggestions
+
+                    echo "==================== AI代码评审结果 ===================="
+                    echo "MR代码质量得分：${score}/100"
+                    echo "风险等级：${risk}"
+                    echo "问题列表：${problems}"
+                    echo "优化建议：${suggestions}"
+                    echo "========================================================"
+
+                    if (score < env.SCORE_THRESHOLD.toInteger()) {
+                        error "❌ AI代码评审不通过！得分${score}，阈值${env.SCORE_THRESHOLD}，流水线终止。"
+                    }
+                }
+            }
+        }
+
+        //==== 下面原有编译、Sonar、清理stage保持不变 ====
         stage('容器内编译ROS2 message包') {
             steps {
                 sh """
@@ -13,7 +97,6 @@ pipeline {
                 pwd
                 ls -la
 
-                # 启动编译容器，挂载workspace到容器 /home/sany/work
                 docker run --rm --privileged --name msg_build_7 \\
                 -v ${WORKSPACE}:/home/sany/work \\
                 --net host --shm-size 512MB \\
@@ -26,15 +109,10 @@ pipeline {
                 rm -rf build install
                 colcon build
                 echo '==== msg包编译完成 ===='
-
-                # 【修复】先删除旧的Package/install，避免目录已存在报错
                 rm -rf /home/sany/work/Package/install
                 mkdir -p /home/sany/work/Package
                 mv /home/sany/work/install /home/sany/work/Package/install
                 ls -la /home/sany/work/Package
-
-                # 执行rename_msgs.sh脚本
-
                 echo '==== 开始执行 rename_msgs.sh ===='
                 rename_msgs.sh
                 echo '==== rename_msgs.sh 执行完成 ===='
@@ -43,7 +121,6 @@ pipeline {
             }
         }
 
-        // ========== Sonar扫描，捕获CE TaskId，轮询质量门禁 ==========
         stage('SonarQube 代码扫描') {
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -55,9 +132,8 @@ pipeline {
                         -Dsonar.sources=. \
                         -Dsonar.exclusions=build/**,install/**,Package/**,**/*.md,**/*.swp \
                         -Dsonar.host.url=http://10.233.88.16:9000 \
-                        -Dsonar.token=${SONAR_TOKEN} > sonar_out.log 2>&1
+                        -Dsonar.token=${SONAR_TOKEN}
                     '''
-                    
                 }
             }
         }
@@ -73,12 +149,13 @@ pipeline {
     post {
         always {
             sh 'docker rm -f msg_build_7 || true'
+            archiveArtifacts artifacts: 'ai_code_review.json', fingerprint: true, allowEmptyArchive: true
         }
         success {
             echo "✅ 流水线全部执行成功！产物目录：${WORKSPACE}/Package/install"
         }
         failure {
-            echo "❌ 流水线执行失败，请查看日志排查"
+            echo "❌ 流水线执行失败，请查看AI代码评审结果"
         }
     }
 }
