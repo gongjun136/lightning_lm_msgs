@@ -3,7 +3,7 @@ pipeline {
     environment {
         // 取git短commit hash
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        SONAR_TOKEN = credentials('sonar-token')
+        SONAR_TOKEN = credentials('jenkins-sonar')
     }   
     stages {
         stage('容器内编译ROS2 message包') {
