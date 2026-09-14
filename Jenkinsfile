@@ -3,63 +3,61 @@ pipeline {
     environment {
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         SONAR_TOKEN = credentials('jenkins-sonar')
-        // ========= 本地Claude网关配置（这里按你的配置改好） =========
         ANTHROPIC_BASE_URL = "http://146.56.245.198:4000"
         ANTHROPIC_MODEL = "MiniMax-M2.7"
-        SCORE_THRESHOLD = 70 // 低于该分数阻断流水线
-        
+        SCORE_THRESHOLD = 70
+        ANTHROPIC_API_KEY = "dummy-key"
     }
     stages {
         stage('AI Code Review - MR Diff') {
             steps {
-                sh  """
-                #!/bin/sh
-                set -e
-                # 获取MR diff，截断防止上下文溢出，最多80k字符
-                git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
-                MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
+                sh '''
+#!/bin/sh
+set -e
+# 获取MR diff，截断防止上下文溢出，最多80k字符
+git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
+MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
 
-                # System提示词：ROS2 C++工业代码评审，强制只输出JSON，无多余文字
-                SYSTEM_PROMPT=$(cat <<'EOF'
-                你是资深ROS2 C++工业代码评审专家。
-                分析下面git MR代码diff，输出严格JSON，**禁止任何前言、解释、markdown**。
-                JSON结构固定：
-                {
-                "score": 0~100整数,
-                "risk_level": "高/中/低",
-                "problems": ["问题1","问题2"],
-                "suggestions": ["建议1"]
-                }
-                评分重点检查：内存泄漏、裸指针、多线程竞态、ROS回调阻塞、资源未释放、魔法数字、硬编码、异常处理。
-                EOF
-                )
+# System提示词：ROS2 C++工业代码评审，强制只输出JSON，无多余文字
+SYSTEM_PROMPT=$(cat <<'EOF'
+你是资深ROS2 C++工业代码评审专家。
+分析下面git MR代码diff，输出严格JSON，禁止任何前言、解释、markdown。
+JSON结构固定：
+{
+"score": 0~100整数,
+"risk_level": "高/中/低",
+"problems": ["问题1","问题2"],
+"suggestions": ["建议1"]
+}
+评分重点检查：内存泄漏、裸指针、多线程竞态、ROS回调阻塞、资源未释放、魔法数字、硬编码、异常处理。
+EOF
+)
 
-                USER_CONTENT=$(cat <<EOF
-                下面是本次MR代码diff：
-                \`\`\`diff
-                ${MR_DIFF}
-                \`\`\`
-                EOF
-                )
+USER_CONTENT=$(cat <<EOF
+下面是本次MR代码diff：
+\`\`\`diff
+${MR_DIFF}
+\`\`\`
+EOF
+)
 
-                # 调用 Anthropic 原生接口 /v1/messages
-                RESP=$(curl -s --connect-timeout 10 "${ANTHROPIC_BASE_URL}/v1/messages" \
-                -H "Content-Type: application/json" \
-                -H "x-api-key: ${ANTHROPIC_API_KEY}" \
-                -d '{
-                "model": "'"${ANTHROPIC_MODEL}"'",
-                "max_tokens": 1200,
-                "system": "'"${SYSTEM_PROMPT}"'",
-                "messages": [
-                {"role":"user","content":"'"${USER_CONTENT}"'"}
-                ]
-                }')
+# 调用 Anthropic 原生接口 /v1/messages
+RESP=$(curl -s --connect-timeout 10 "${ANTHROPIC_BASE_URL}/v1/messages" \
+-H "Content-Type: application/json" \
+-H "x-api-key: ${ANTHROPIC_API_KEY}" \
+-d '{
+"model": "'"${ANTHROPIC_MODEL}"'",
+"max_tokens": 1200,
+"system": "'"${SYSTEM_PROMPT}"'",
+"messages": [
+{"role":"user","content":"'"${USER_CONTENT}"'"}
+]
+}')
 
-                echo "==== Gateway Raw Response ===="
-                echo "${RESP}"
-                echo "${RESP}" > ai_code_review.json
-                EOF
-                """
+echo "==== Gateway Raw Response ===="
+echo "${RESP}"
+echo "${RESP}" > ai_code_review.json
+'''
                 script {
                     def aiRaw = readJSON file: 'ai_code_review.json'
                     // Anthropic返回结构：content[0].text 才是大模型输出文本
@@ -87,7 +85,6 @@ pipeline {
             }
         }
 
-        //==== 下面原有编译、Sonar、清理stage保持不变 ====
         stage('容器内编译ROS2 message包') {
             steps {
                 sh """
