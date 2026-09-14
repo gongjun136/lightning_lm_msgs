@@ -27,7 +27,8 @@ rm -rf build install
 colcon build
 echo '==== msg包编译完成 ===='
 
-# 新建Package目录，将编译产物install移入Package/install
+# 【修复】先删除旧的Package/install，避免目录已存在报错
+rm -rf /home/sany/work/Package/install
 mkdir -p /home/sany/work/Package
 mv /home/sany/work/install /home/sany/work/Package/install
 ls -la /home/sany/work/Package
