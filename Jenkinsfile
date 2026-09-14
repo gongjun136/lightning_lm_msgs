@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-        // ========== Sonar扫描 + 自定义API轮询质量门禁 ==========
+        // ========== Sonar扫描 + 自定义API轮询质量门禁（dash兼容，无jq） ==========
         stage('SonarQube 代码扫描与质量门禁') {
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -59,22 +59,29 @@ pipeline {
                     '''
                     timeout(time:5, unit:'MINUTES'){
                         sh '''
+                            #!/bin/sh
                             set -e
                             SONAR_HOST="http://10.233.88.16:9000"
                             TOKEN="${SONAR_TOKEN}"
-                            ANALYSIS_ID="${SONAR_ANALYSIS_ID}"
 
-                            for ((i=0; i<30; i++)); do
+                            # 获取项目最新一次分析的analysisId
+                            RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/project_analyses/search?project=my-project&pageSize=1")
+                            ANALYSIS_ID=$(echo "${RESP}" | grep -o '"analysisId":"[^"]*"' | head -1 | cut -d'"' -f4)
+                            echo "Fetched ANALYSIS_ID: ${ANALYSIS_ID}"
+
+                            i=0
+                            while [ $i -lt 30 ]; do
+                                i=$((i+1))
                                 echo "Poll quality gate, attempt $i"
-                                RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/qualitygates/project_status?analysisId=${ANALYSIS_ID}")
-                                QG_STATUS=$(echo "$RESP" | jq -r '.projectStatus.status')
+                                QG_RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/qualitygates/project_status?analysisId=${ANALYSIS_ID}")
+                                QG_STATUS=$(echo "${QG_RESP}" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
                                 echo "QualityGate status = ${QG_STATUS}"
 
-                                if [[ "${QG_STATUS}" == "OK" ]]; then
+                                if [ "${QG_STATUS}" = "OK" ]; then
                                     echo "✅ Sonar质量门禁校验通过"
                                     exit 0
                                 fi
-                                if [[ "${QG_STATUS}" == "ERROR" || "${QG_STATUS}" == "FAILED" ]]; then
+                                if [ "${QG_STATUS}" = "ERROR" ] || [ "${QG_STATUS}" = "FAILED" ]; then
                                     echo "❌ Sonar质量门禁校验失败"
                                     exit 1
                                 fi
