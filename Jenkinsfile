@@ -7,8 +7,7 @@ pipeline {
         ANTHROPIC_BASE_URL = "http://146.56.245.198:4000"
         ANTHROPIC_MODEL = "MiniMax-M2.7"
         SCORE_THRESHOLD = 70 // 低于该分数阻断流水线
-        # 如果网关需要api-key，在这里填，不需要就随便填占位字符串
-        ANTHROPIC_API_KEY = "dummy-key"
+        
     }
     stages {
         stage('AI Code Review - MR Diff') {
