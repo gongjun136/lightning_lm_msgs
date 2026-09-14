@@ -1,7 +1,6 @@
 pipeline {
     agent any
     environment {
-        // 取git短commit hash
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         SONAR_TOKEN = credentials('jenkins-sonar')
     }
@@ -44,8 +43,8 @@ pipeline {
             }
         }
 
-        // ========== SonarQube 代码扫描 ==========
-        stage('SonarQube 代码扫描') {
+        // ========== Sonar扫描 + 自定义API轮询质量门禁 ==========
+        stage('SonarQube 代码扫描与质量门禁') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
@@ -58,15 +57,33 @@ pipeline {
                         -Dsonar.host.url=http://10.233.88.16:9000 \
                         -Dsonar.token=${SONAR_TOKEN}
                     '''
-                }
-            }
-        }
+                    timeout(time:5, unit:'MINUTES'){
+                        sh '''
+                            set -e
+                            SONAR_HOST="http://10.233.88.16:9000"
+                            TOKEN="${SONAR_TOKEN}"
+                            ANALYSIS_ID="${SONAR_ANALYSIS_ID}"
 
-        // ========== Sonar质量门禁校验 ==========
-        stage('Sonar 质量门禁校验') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                            for ((i=0; i<30; i++)); do
+                                echo "Poll quality gate, attempt $i"
+                                RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/qualitygates/project_status?analysisId=${ANALYSIS_ID}")
+                                QG_STATUS=$(echo "$RESP" | jq -r '.projectStatus.status')
+                                echo "QualityGate status = ${QG_STATUS}"
+
+                                if [[ "${QG_STATUS}" == "OK" ]]; then
+                                    echo "✅ Sonar质量门禁校验通过"
+                                    exit 0
+                                fi
+                                if [[ "${QG_STATUS}" == "ERROR" || "${QG_STATUS}" == "FAILED" ]]; then
+                                    echo "❌ Sonar质量门禁校验失败"
+                                    exit 1
+                                fi
+                                sleep 5
+                            done
+                            echo "⏱️ 轮询超时，未拿到质量门禁结果"
+                            exit 1
+                        '''
+                    }
                 }
             }
         }
@@ -81,7 +98,6 @@ pipeline {
     }
     post {
         always {
-            // 直接执行sh，不要嵌套node{}
             sh 'docker rm -f msg_build_7 || true'
         }
         success {
