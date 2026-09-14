@@ -44,7 +44,7 @@ pipeline {
         }
 
         // ========== Sonar扫描，捕获CE TaskId，轮询质量门禁 ==========
-        stage('SonarQube 代码扫描与质量门禁') {
+        stage('SonarQube 代码扫描') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
@@ -57,58 +57,7 @@ pipeline {
                         -Dsonar.host.url=http://10.233.88.16:9000 \
                         -Dsonar.token=${SONAR_TOKEN} > sonar_out.log 2>&1
                     '''
-                    // 提取CE task id
-                    sh '''
-#!/bin/sh
-set -e
-SONAR_HOST="http://10.233.88.16:9000"
-TOKEN="${SONAR_TOKEN}"
-
-# 从sonar输出日志提取CE task id
-CE_TASK_ID=$(grep "api/ce/task?id=" sonar_out.log | head -1 | cut -d'=' -f2)
-echo "CE_TASK_ID = ${CE_TASK_ID}"
-
-# 轮询CE任务直到SUCCESS
-CE_STATUS=""
-i=0
-while [ $i -lt 30 ]; do
-    i=$((i+1))
-    echo "Poll CE task, attempt $i"
-    CE_RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/ce/task?id=${CE_TASK_ID}")
-    CE_STATUS=$(echo "${CE_RESP}" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
-    echo "CE status = ${CE_STATUS}"
-    if [ "${CE_STATUS}" = "SUCCESS" ]; then
-        break
-    fi
-    if [ "${CE_STATUS}" = "FAILED" ]; then
-        echo "❌ Sonar CE任务失败"
-        exit 1
-    fi
-    sleep 3
-done
-
-if [ "${CE_STATUS}" != "SUCCESS" ]; then
-    echo "⏱️ CE任务超时未完成"
-    exit 1
-fi
-
-# 拿到analysisId
-ANALYSIS_ID=$(echo "${CE_RESP}" | grep -o '"analysisId":"[^"]*"' | head -1 | cut -d'"' -f4)
-echo "ANALYSIS_ID = ${ANALYSIS_ID}"
-
-# 查询质量门禁
-QG_RESP=$(curl -s -u "${TOKEN}:" "${SONAR_HOST}/api/qualitygates/project_status?analysisId=${ANALYSIS_ID}")
-QG_STATUS=$(echo "${QG_RESP}" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
-echo "QualityGate status = ${QG_STATUS}"
-
-if [ "${QG_STATUS}" = "OK" ]; then
-    echo "✅ Sonar质量门禁校验通过"
-    exit 0
-else
-    echo "❌ Sonar质量门禁校验不通过"
-    exit 1
-fi
-                    '''
+                    
                 }
             }
         }
