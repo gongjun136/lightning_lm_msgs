@@ -1,88 +1,61 @@
 pipeline {
     agent any
-
     environment {
-        HARBOR_ADDR = '10.233.88.6:60001'
-        HARBOR_PROJECT = 'geacx2_aarch64'
-        APP_NAME = 'ros2_msg_lib'
-        BASE_IMAGE = "${HARBOR_ADDR}/${HARBOR_PROJECT}/ubuntu22.04:latest"
-        CONTAINER_NAME = "msg_build_${BUILD_NUMBER}"
-        IMAGE_TAG = "${env.GIT_COMMIT.substring(0, 7)}"
-        FULL_IMAGE = "${HARBOR_ADDR}/${HARBOR_PROJECT}/${APP_NAME}:${IMAGE_TAG}"
+        // 取git短commit hash
+        GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
     }
-
     stages {
         stage('容器内编译ROS2 message包') {
-            steps {
-                sh '''
-                    docker run --rm \
-                      --privileged \
-                      --name ${CONTAINER_NAME} \
-                      -v ${WORKSPACE}:/home/sany/work \
-                      --net host \
-                      --shm-size 512MB \
-                      -w /home/sany/work \
-                      -e BUILD_ARCH=aarch64 \
-                      ${BASE_IMAGE} \
-                      bash -c "
-                        set -e
-                        # 加载ROS2 humble环境（关键修复）
-                        source /opt/ros/humble/setup.bash
-                        rm -rf build install
-                        colcon build
-                        echo '==== msg包编译完成 ===='
-                      "
-                '''
-                echo "消息包编译完成"
-            }
-        }
+            sh '''
+set -e
+echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
+pwd
+ls -la
 
-        stage('构建消息库镜像') {
-            steps {
-                sh """
-                    docker build -f ci/Dockerfile_msgs -t ${FULL_IMAGE} .
-                    docker tag ${FULL_IMAGE} ${HARBOR_ADDR}/${HARBOR_PROJECT}/${APP_NAME}:latest
-                    echo "镜像构建成功：${FULL_IMAGE}"
-                """
-            }
-        }
+# 启动编译容器，挂载workspace到容器 /home/sany/work
+docker run --rm --privileged --name msg_build_7 \
+-v ${WORKSPACE}:/home/sany/work \
+--net host --shm-size 512MB \
+-w /home/sany/work \
+-e BUILD_ARCH=aarch64 \
+10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \
+bash -c "
+set -e
+source /opt/ros/humble/setup.bash
+rm -rf build install
+colcon build
+echo '==== msg包编译完成 ===='
 
-        stage('推送镜像到Harbor') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'harbor-robot-cred',
-                    usernameVariable: 'HARBOR_USER',
-                    passwordVariable: 'HARBOR_PASS'
-                )]) {
-                    sh '''
-                        docker login ${HARBOR_ADDR} -u ${HARBOR_USER} -p ${HARBOR_PASS}
-                        docker push ${FULL_IMAGE}
-                        docker push ${HARBOR_ADDR}/${HARBOR_PROJECT}/${APP_NAME}:latest
-                        docker logout ${HARBOR_ADDR}
-                    '''
-                }
-            }
+# 新建Package目录，将编译产物install移入Package/install
+mkdir -p /home/sany/work/Package
+mv /home/sany/work/install /home/sany/work/Package/install
+ls -la /home/sany/work/Package
+
+# 执行rename_msgs.sh脚本
+chmod +x /home/sany/work/rename_msgs.sh
+echo '==== 开始执行 rename_msgs.sh ===='
+/home/sany/work/rename_msgs.sh
+echo '==== rename_msgs.sh 执行完成 ===='
+"
+'''
         }
 
         stage('本地镜像清理') {
-            steps {
-                sh """
-                    docker rmi -f ${FULL_IMAGE} ${HARBOR_ADDR}/${HARBOR_PROJECT}/${APP_NAME}:latest || true
-                    docker image prune -f
-                    cleanWs()
-                """
-            }
+            sh '''
+docker image prune -f
+'''
         }
     }
-
     post {
-        failure {
-            sh "docker rm -f ${CONTAINER_NAME} || true"
-            archiveArtifacts artifacts: 'build/**/*.log', allowEmptyArchive: true
-            echo "==== 流水线失败 ===="
+        always {
+            // 无论成功失败，清理残留构建容器
+            sh 'docker rm -f msg_build_7 || true'
         }
         success {
-            echo "==== message包CI流水线全部成功，镜像推送到Harbor ===="
+            echo "✅ 流水线全部执行成功！产物目录：${WORKSPACE}/Package/install"
+        }
+        failure {
+            echo "❌ 流水线执行失败，请查看日志排查"
         }
     }
 }
