@@ -11,14 +11,15 @@ pipeline {
     stages {
         stage('AI Code Review - MR Diff') {
             when {
-                // 只有存在gitlabTargetBranch变量(MR触发)才执行本stage
-                environment name: 'gitlabTargetBranch', value: ''
+                expression { env.gitlabTargetBranch != null && env.gitlabTargetBranch.trim() != '' }
             }
             steps {
                 sh '''
 #!/bin/sh
 set -e
-git fetch origin ${gitlabTargetBranch}:refs/remotes/origin/${gitlabTargetBranch}
+# 拉取目标分支
+git fetch origin ${gitlabTargetBranch}
+# 获取MR对比diff，限制长度
 MR_DIFF=$(git diff origin/${gitlabTargetBranch}...HEAD | head -c 80000)
 
 SYSTEM_PROMPT=$(cat <<'EOF'
