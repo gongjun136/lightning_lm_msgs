@@ -6,19 +6,20 @@ pipeline {
     }
     stages {
         stage('容器内编译ROS2 message包') {
-            sh '''
+            steps {
+                sh '''
 set -e
 echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
 pwd
 ls -la
 
 # 启动编译容器，挂载workspace到容器 /home/sany/work
-docker run --rm --privileged --name msg_build_7 \
--v ${WORKSPACE}:/home/sany/work \
---net host --shm-size 512MB \
--w /home/sany/work \
--e BUILD_ARCH=aarch64 \
-10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \
+docker run --rm --privileged --name msg_build_7 \\
+-v ${WORKSPACE}:/home/sany/work \\
+--net host --shm-size 512MB \\
+-w /home/sany/work \\
+-e BUILD_ARCH=aarch64 \\
+10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \\
 bash -c "
 set -e
 source /opt/ros/humble/setup.bash
@@ -38,17 +39,19 @@ echo '==== 开始执行 rename_msgs.sh ===='
 echo '==== rename_msgs.sh 执行完成 ===='
 "
 '''
+            }
         }
 
         stage('本地镜像清理') {
-            sh '''
+            steps {
+                sh '''
 docker image prune -f
 '''
+            }
         }
     }
     post {
         always {
-            // 无论成功失败，清理残留构建容器
             sh 'docker rm -f msg_build_7 || true'
         }
         success {
