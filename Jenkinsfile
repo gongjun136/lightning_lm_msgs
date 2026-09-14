@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('AI Code Review - MR Diff') {
             steps {
-                sh '''
+                sh  """
                 #!/bin/sh
                 set -e
                 # 获取MR diff，截断防止上下文溢出，最多80k字符
@@ -59,7 +59,7 @@ pipeline {
                 echo "${RESP}"
                 echo "${RESP}" > ai_code_review.json
                 EOF
-                '''
+                """
                 script {
                     def aiRaw = readJSON file: 'ai_code_review.json'
                     // Anthropic返回结构：content[0].text 才是大模型输出文本
