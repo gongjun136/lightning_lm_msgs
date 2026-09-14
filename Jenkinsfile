@@ -3,51 +3,79 @@ pipeline {
     environment {
         // 取git短commit hash
         GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-    }
+        SONAR_TOKEN = credentials('sonar-token')
+    }   
     stages {
         stage('容器内编译ROS2 message包') {
             steps {
                 sh """
-set -e
-echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
-pwd
-ls -la
+                set -e
+                echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
+                pwd
+                ls -la
 
-# 启动编译容器，挂载workspace到容器 /home/sany/work
-docker run --rm --privileged --name msg_build_7 \\
--v ${WORKSPACE}:/home/sany/work \\
---net host --shm-size 512MB \\
--w /home/sany/work \\
--e BUILD_ARCH=aarch64 \\
-10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \\
-bash -c "
-set -e
-source /opt/ros/humble/setup.bash
-rm -rf build install
-colcon build
-echo '==== msg包编译完成 ===='
+                # 启动编译容器，挂载workspace到容器 /home/sany/work
+                docker run --rm --privileged --name msg_build_7 \\
+                -v ${WORKSPACE}:/home/sany/work \\
+                --net host --shm-size 512MB \\
+                -w /home/sany/work \\
+                -e BUILD_ARCH=aarch64 \\
+                10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \\
+                bash -c "
+                set -e
+                source /opt/ros/humble/setup.bash
+                rm -rf build install
+                colcon build
+                echo '==== msg包编译完成 ===='
 
-# 【修复】先删除旧的Package/install，避免目录已存在报错
-rm -rf /home/sany/work/Package/install
-mkdir -p /home/sany/work/Package
-mv /home/sany/work/install /home/sany/work/Package/install
-ls -la /home/sany/work/Package
+                # 【修复】先删除旧的Package/install，避免目录已存在报错
+                rm -rf /home/sany/work/Package/install
+                mkdir -p /home/sany/work/Package
+                mv /home/sany/work/install /home/sany/work/Package/install
+                ls -la /home/sany/work/Package
 
-# 执行rename_msgs.sh脚本
+                # 执行rename_msgs.sh脚本
 
-echo '==== 开始执行 rename_msgs.sh ===='
-rename_msgs.sh
-echo '==== rename_msgs.sh 执行完成 ===='
-"
-"""
+                echo '==== 开始执行 rename_msgs.sh ===='
+                rename_msgs.sh
+                echo '==== rename_msgs.sh 执行完成 ===='
+                "
+                """
+            }
+        }
+
+        // ========== 新增 SonarQube 代码扫描阶段 ==========
+        stage('SonarQube 代码扫描') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                    sonar-scanner \
+                        -Dsonar.projectKey=my-project \
+                        -Dsonar.projectName=ROS2-Msg-Package \
+                        -Dsonar.projectVersion=${GIT_COMMIT_SHORT} \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=build/**,install/**,Package/**,**/*.md \
+                        -Dsonar.host.url=http://127.0.0.1:9000 \
+                        -Dsonar.login=${SONAR_TOKEN}
+                    """
+                }
+            }
+        }
+
+        // ========== 新增：Sonar质量门禁校验（可选，建议开启，不达标阻断流水线） ==========
+        stage('Sonar 质量门禁校验') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
         stage('本地镜像清理') {
             steps {
                 sh """
-docker image prune -f
-"""
+                docker image prune -f
+            """
             }
         }
     }
