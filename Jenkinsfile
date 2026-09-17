@@ -88,6 +88,7 @@ echo "${RESP}" > ai_code_review.json
         stage('容器内编译ROS2 message包') {
             steps {
                 sh """
+                #!/bin/bash
                 set -e
                 echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
                 pwd
@@ -101,7 +102,7 @@ echo "${RESP}" > ai_code_review.json
                 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \\
                 bash -c "
                 set -e
-                source /opt/ros/humble/setup.bash
+                . /opt/ros/humble/setup.bash
                 rm -rf build install
                 colcon build
                 echo '==== msg包编译完成 ===='
