@@ -94,9 +94,13 @@ pipeline {
                 sh """
                 #!/bin/bash
                 set -e
-                docker build -f ci/Dockerfile_msgs -t message-with-msg-artifact:${GIT_COMMIT_SHORT} .
-                echo "✅ 镜像构建完成 message-with-msg-artifact:${GIT_COMMIT_SHORT}"
-                docker images | grep message-with-msg-artifact
+                # 镜像命名：message-common + 安全分支名 + :latest
+                IMAGE_NAME="message-common-${BRANCH_NAME_SAFE}:latest"
+                
+                docker build -f ci/Dockerfile_msgs -t \${IMAGE_NAME} .
+                
+                echo "✅ 镜像构建完成：\${IMAGE_NAME}"
+                docker images | grep message-common
                 """
             }
         }
