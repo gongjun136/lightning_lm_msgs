@@ -1,14 +1,23 @@
-FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest
-
+# 阶段1：编译阶段（builder）
+FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest AS builder
 WORKDIR /home/sany/work
+# 拷贝当前git源码进入镜像
+COPY . .
+# 加载ROS2环境，编译
+RUN . /opt/ros/humble/setup.bash && \
+    rm -rf build install && \
+    colcon build && \
+    rm -rf /home/sany/work/Package/Common/message/install && \
+    
+    mv /home/sany/work/install /home/sany/work/Package/Common/message/ && \
+    echo '==== 开始执行 rename_msgs.sh ====' && \
+    rename_msgs.sh && \
+    echo '==== rename_msgs.sh 执行完成 ===='
 
-# 提前创建目录，给所有人读写执行权限，解决jenkins用户无权限创建
-RUN mkdir -p /home/sany/work/Package/Common/message && chmod -R 777 /home/sany/work
-
-# 仅拷贝编译后的install目录（消息产物）
-COPY install ./install
-
-# 创建日志目录，保持目录规范统一
-RUN mkdir -p /var/log/ros2/{bridge,control,diagnostics,localization,perception,VLM,VLA,planning,decision}
+# 阶段2：最终镜像，只复制编译产物，不需要源码、build临时文件
+FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest
+WORKDIR /home/sany/work
+# 从builder阶段拷贝编译产物到最终镜像
+COPY --from=builder /home/sany/work/Package/Common/message /home/sany/work/Package/Common/message
 
 CMD ["/bin/bash"]
