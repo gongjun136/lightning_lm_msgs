@@ -5,7 +5,7 @@ pipeline {
         // 新增：获取当前分支名
         BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
         // 新增：分支名含/时自动替换为_（推荐，避免Docker镜像名斜杠歧义）
-        BRANCH_NAME_SAFE = sh(script: 'git rev-parse --abbrev-ref HEAD | tr / _', returnStdout: true).trim()
+        BRANCH_NAME_SAFE = sh(script: 'git rev-parse --abbrev-ref HEAD | tr / _ | tr "[:upper:]" "[:lower:]"', returnStdout: true).trim()
         SONAR_TOKEN = credentials('jenkins-sonar')
         ANTHROPIC_BASE_URL = "http://146.56.245.198:4000"
         ANTHROPIC_MODEL = "MiniMax-M2.7"
