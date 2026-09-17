@@ -3,6 +3,10 @@ FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest AS builder
 WORKDIR /home/sany/work
 # 拷贝当前git源码进入镜像
 COPY . .
+
+# 固定架构环境变量，满足交叉编译工具链要求
+ENV BUILD_ARCH=aarch64
+
 # 加载ROS2环境，编译
 RUN bash -c "set -x && \
     source /opt/ros/humble/setup.bash && \
