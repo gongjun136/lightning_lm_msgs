@@ -2,6 +2,9 @@ FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest
 
 WORKDIR /home/sany/work
 
+# 提前创建目录，给所有人读写执行权限，解决jenkins用户无权限创建
+RUN mkdir -p /home/sany/work/Package/Common/message && chmod -R 777 /home/sany/work
+
 # 仅拷贝编译后的install目录（消息产物）
 COPY install ./install
 
