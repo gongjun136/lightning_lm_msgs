@@ -85,41 +85,13 @@ pipeline {
             }
         }
 
-        stage('容器内编译ROS2 message包') {
+        stage('构建镜像并编译message产物') {
             steps {
                 sh """
                 #!/bin/bash
                 set -e
-                echo "==== Jenkins宿主机WORKSPACE = ${WORKSPACE}"
-                pwd
-                ls -la
-
-                # 启动容器：去掉 --rm！编译完保留容器
-                docker run --name msg_build_7 \\
-                -v ${WORKSPACE}:/home/sany/work \\
-                --net host --shm-size 512MB \\
-                -w /home/sany/work \\
-                -e BUILD_ARCH=aarch64 \\
-                10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest \\
-                bash -c "
-                set -e
-                . /opt/ros/humble/setup.bash
-                rm -rf build install
-                colcon build
-                echo '==== msg包编译完成 ===='
-                rm -rf /home/sany/work/Package/Common/message/install
-                
-                mv /home/sany/work/install /home/sany/work/Package/Common/message/
-                ls -la /home/sany/work/Package
-                echo '==== 开始执行 rename_msgs.sh ===='
-                rename_msgs.sh
-                echo '==== rename_msgs.sh 执行完成 ===='
-                "
-
-                # ✅ 核心：把这个运行后的容器commit，打包成新镜像，产物固化到镜像内
-                # 镜像tag：message-with-msg-artifact:${GIT_COMMIT_SHORT}，按git commit区分版本
-                docker commit msg_build_7 message-with-msg-artifact:${GIT_COMMIT_SHORT}
-                echo "✅ 镜像打包完成：message-with-msg-artifact:${GIT_COMMIT_SHORT}"
+                docker build -f Dockerfile_msgs -t message-with-msg-artifact:${GIT_COMMIT_SHORT} .
+                echo "✅ 镜像构建完成 message-with-msg-artifact:${GIT_COMMIT_SHORT}"
                 docker images | grep message-with-msg-artifact
                 """
             }
