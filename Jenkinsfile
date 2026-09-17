@@ -90,7 +90,7 @@ pipeline {
                 sh """
                 #!/bin/bash
                 set -e
-                docker build -f Dockerfile_msgs -t message-with-msg-artifact:${GIT_COMMIT_SHORT} .
+                docker build -f ci/Dockerfile_msgs -t message-with-msg-artifact:${GIT_COMMIT_SHORT} .
                 echo "✅ 镜像构建完成 message-with-msg-artifact:${GIT_COMMIT_SHORT}"
                 docker images | grep message-with-msg-artifact
                 """
