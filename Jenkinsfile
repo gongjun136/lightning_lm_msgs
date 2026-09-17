@@ -152,7 +152,7 @@ pipeline {
     }
     post {
         always {
-            # 先尝试删除容器
+            
             sh 'docker rm -f msg_build_7 || true'
             archiveArtifacts artifacts: 'ai_code_review.json', fingerprint: true, allowEmptyArchive: true
         }
