@@ -108,8 +108,8 @@ pipeline {
                 colcon build
                 echo '==== msg包编译完成 ===='
                 rm -rf /home/sany/work/Package/Common/message/install
-                mkdir -p /home/sany/work/Package/Common/message/install
-                mv /home/sany/work/install /home/sany/work/Package/Common/message/install
+                
+                mv /home/sany/work/install /home/sany/work/Package/Common/message/
                 ls -la /home/sany/work/Package
                 echo '==== 开始执行 rename_msgs.sh ===='
                 rename_msgs.sh
