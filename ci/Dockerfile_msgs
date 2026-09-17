@@ -4,7 +4,7 @@ WORKDIR /home/sany/work
 # 拷贝当前git源码进入镜像
 COPY . .
 # 加载ROS2环境，编译
-RUN . /opt/ros/humble/setup.bash && \
+RUN bash -c ". /opt/ros/humble/setup.bash && \
     rm -rf build install && \
     colcon build && \
     rm -rf /home/sany/work/Package/Common/message/install && \
@@ -12,7 +12,7 @@ RUN . /opt/ros/humble/setup.bash && \
     mv /home/sany/work/install /home/sany/work/Package/Common/message/ && \
     echo '==== 开始执行 rename_msgs.sh ====' && \
     rename_msgs.sh && \
-    echo '==== rename_msgs.sh 执行完成 ===='
+    echo '==== rename_msgs.sh 执行完成 ===='"
 
 # 阶段2：最终镜像，只复制编译产物，不需要源码、build临时文件
 FROM 10.233.88.6:60001/geacx2_aarch64/ubuntu22.04:latest
