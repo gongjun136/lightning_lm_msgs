@@ -4,7 +4,8 @@ WORKDIR /home/sany/work
 # 拷贝当前git源码进入镜像
 COPY . .
 # 加载ROS2环境，编译
-RUN bash -c ". /opt/ros/humble/setup.bash && \
+RUN bash -c "set -x && \
+    source /opt/ros/humble/setup.bash && \
     rm -rf build install && \
     colcon build && \
     rm -rf /home/sany/work/Package/Common/message/install && \
