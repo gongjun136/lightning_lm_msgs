@@ -16,7 +16,7 @@ pipeline {
                 sh """
 set -e
 # 自动创建目标目录，不存在则新建
-mkdir -p ${MSG_INSTALL_DIR}
+# mkdir -p ${MSG_INSTALL_DIR}
 
 # 编译 geosun_msgs，产物输出到指定目录
 colcon build --packages-select geosun_msgs --install-base ${MSG_INSTALL_DIR}
