@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-include(/opt/Cross-Compilation/toolchain.cmake)
 project(geosun_msgs)
 
 # Default to C99
@@ -65,8 +64,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RelocatePos.msg"
   "srv/SaveMap.srv"
   "srv/GetInitPosition.srv"
-  "msg/Diagnostic.msg"
-  "msg/Safety.msg"
   DEPENDENCIES std_msgs sensor_msgs
   DEPENDENCIES builtin_interfaces
 )

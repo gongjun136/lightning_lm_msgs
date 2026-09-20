@@ -1,0 +1,11 @@
+std_msgs/Header header
+string mode_state
+int32 current_task_id
+string current_phase
+float32 current_phase_progress
+vlm_pipeline/VehiclePose vehicle_pose
+float32 vehicle_speed
+float32 bucket_angle
+float32 boom_angle
+int32 completed_task_count
+int32 total_task_count

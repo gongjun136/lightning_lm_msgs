@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-include(/opt/Cross-Compilation/toolchain.cmake)
 project(wheelloader_main_pkg)
 
 # Default to C99
@@ -52,6 +51,9 @@ set(msg_files
   "msg/Warning.msg"
   "msg/MaterialLevel.msg"
   "msg/Material.msg"
+  "msg/Dec2conLowerPoint.msg"
+  "msg/Dec2conLowerPoints.msg"
+  "msg/PlanResult.msg"
   "msg/Dec2conLowerPath.msg"
   "msg/Dec2conUpperCtrl.msg"
   "msg/Dec2conLowerTurn.msg"
@@ -60,11 +62,6 @@ set(msg_files
   "msg/Dec2planLocalTask.msg"
   "msg/Dec2planLocalFeeds.msg"
   "msg/Dec2planGeneralParams.msg"
-  "msg/Dec2conLowerPoint.msg"
-  "msg/Dec2conLowerPoints.msg"
-  "msg/MultiArray1024.msg"
-  
-  
 )
 
 # 设置服务文件

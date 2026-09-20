@@ -1,0 +1,12 @@
+std_msgs/Header header
+int32 task_id
+string previous_phase
+string current_phase
+string loading_bin_id
+string unloading_bin_id
+string material_type
+float64 actual_weight
+float64 previous_phase_time
+float64 estimated_phase_time
+int32[] alarm_num
+float64[] alarm_time

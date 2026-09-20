@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-include(/opt/Cross-Compilation/toolchain.cmake)
 project(hybrid_node)
 
 # Default to C99
@@ -44,10 +43,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 install(
   DIRECTORY msg/
   DESTINATION share/${PROJECT_NAME}/msg
-)
-install(
-  DIRECTORY srv/
-  DESTINATION share/${PROJECT_NAME}/srv
 )
 # 导出包含路径
 ament_export_include_directories(include)

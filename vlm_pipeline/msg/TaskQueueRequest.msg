@@ -1,0 +1,3 @@
+std_msgs/Header header
+string request_id
+vlm_pipeline/VehiclePose vehicle_pose

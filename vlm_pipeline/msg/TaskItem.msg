@@ -1,0 +1,4 @@
+int32 task_id
+string material_type
+string loading_bin_id
+string unloading_bin_id

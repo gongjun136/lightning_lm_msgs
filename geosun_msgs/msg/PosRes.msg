@@ -15,4 +15,3 @@ float64[3] f8pry         #Euler angle: deg
 float64[3] f8deltapry    #the standard deviation of Euler angle: deg
 float64[3] f8angrate     #Gyro angle rate
 float64[3] f8acce        #acceleration
-
