@@ -6,6 +6,7 @@ int8 LEVEL_P2=2
 
 # Message creation time. header.frame_id is unused.
 std_msgs/Header header
+diagnostic_monitor_interfaces/TopicCommHeader comm_header
 
 # Current fault severity.
 int8 level

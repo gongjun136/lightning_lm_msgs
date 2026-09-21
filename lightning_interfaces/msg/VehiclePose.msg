@@ -1,4 +1,5 @@
 std_msgs/Header header
+diagnostic_monitor_interfaces/TopicCommHeader comm_header
 
 float64 x       # m
 float64 y       # m
