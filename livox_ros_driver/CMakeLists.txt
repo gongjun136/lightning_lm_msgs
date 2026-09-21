@@ -139,7 +139,5 @@ add_definitions(${PCL_DEFINITIONS})
 ## )
 ##
 
-# ament_auto_package(INSTALL_TO_SHARE
-#       config
-#       launch_ROS2
-# )
+ament_export_dependencies(rosidl_default_runtime)
+ament_package()
